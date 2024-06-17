@@ -83,7 +83,8 @@ app.post('/auth', (req, res) => {
     res.json({
         status:authUser(req.body.gmail),
         auth:true,
-        tocen
+        tocen,
+        mail:req.body.gmail
     })
 });
 
