@@ -172,7 +172,7 @@ app.post('/custom-email', async (req, res) => {
                                             line-height: 29.26px;
                                             text-align: center;
                                             color: #6db2fa;" align="center" height="48" max-width="12">
-                                                Attention code valid only 3 minutes
+                                                Attention code valid only 2 minutes
                                             </td>
                                         </tr>
                                     </table>
