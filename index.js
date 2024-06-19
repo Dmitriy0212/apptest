@@ -4,32 +4,12 @@ import express from 'express';
 import fs from 'fs';
 const app = express();
 
-//const key = fs.readFileSync("ca.key");
-//const cert = fs.readFileSync("ca.crt");
-
-//const server = https.createServer({ key, cert }, app);
-
-import { addTitle } from './mods/addtitle.js';
-import { editTitle } from './mods/editpost.js';
-import { addData } from './mods/home.js';
-import { getOnePost } from './mods/getonepost.js';
-import { getByTeg } from './mods/getByTeg.js';
-import { getByYearThis } from './mods/getByYear.js';
-import { getTegs } from './mods/getTegs.js';
-import { getYear } from './mods/getYear.js';
-import { getByGenreThis } from './mods/getByGenreThis.js';
-import { getGenre } from './mods/getGenre.js';
 import { authUser } from './mods/auth.js'
-import multer from 'multer';
 import cors from 'cors';
 import { dirname } from 'node:path';
-import path from 'node:path';
 import { fileURLToPath } from 'url';
 import jwt from 'jsonwebtoken'
-
 import nodemailer from 'nodemailer'
-import dotenv from 'dotenv'
-dotenv.config()
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 app.use('/uploads', express.static('uploads'));
@@ -42,20 +22,44 @@ app.use(express.static('pabl'));
 
 app.use(cors());
 
-var storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, 'uploads/') // your path
-    },
-    filename: function (req, file, cb) {
-        cb(null, file.originalname)
+
+const PORT = process.env.PORT || 8080;
+const HOST = 'localhost';
+
+app.post('/auth', (req, res) => {
+    const tocen = jwt.sign({
+        gmail: req.body
+    }, 'secret123');
+    let auth = authUser(req.body.gmail)
+    if (auth.status === 200) {
+        addToken(req.body.gmail, addTokenToBasa(req.body.gmail, tocen))
+        res.json({
+            mail: req.body.gmail,
+            status: auth.status,
+            id: auth.id,
+            auth: true,
+            tocen
+        });
+    }
+    else {
+        res.json({
+            status: auth,
+            auth: true,
+        });
     }
 });
 
-var upload = multer({ storage: storage })
+app.post('/tocenemail', async (req, res) => {
+    console.log(req.body)
+    res.json({ token: authTrue(req.body.mailValue, req.body.data.code) });
+})
 
-let user = undefined
+app.listen(PORT, () => {
+    console.log(`Server run: http://${HOST}:${PORT}`)
+});
 
-app.post('/custom-email', async (req, res) => {
+
+function addToken(mail, code) {
     const transporter = nodemailer.createTransport(
         {
             pool: true,
@@ -63,7 +67,7 @@ app.post('/custom-email', async (req, res) => {
             auth: {
                 type: 'OAuth2',
                 user: 'marenichd1990@gmail.com',
-                refreshToken: '1//04yDcKy7ortHACgYIARAAGAQSNwF-L9IrnvkUQFqQtalgB2HuRH9iycwuwDNaBOTUrmPmiRuwHGKPgbKLpsPJTbJPvFEbrK1o6jE',
+                refreshToken: '1//04030R0SGzApaCgYIARAAGAQSNwF-L9IrnVdJ8GiXub8DjWNgRpMs0u4UHzpWM0zW6s1Kuav_XJWaaixS9TghAoBwYw9MVI0Hpsg',
                 clientId: '686679209962-amigag1o3prerlltaq7qk9ektm4cmms0.apps.googleusercontent.com',
                 clientSecret: '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',
             }
@@ -77,23 +81,23 @@ app.post('/custom-email', async (req, res) => {
         if (error) return console.log(error)
         console.log('Server is ready to take our messages: ', success)
         transporter.on('token', token => {
-            console.log('A new access token was generated')
-            console.log('User: %s', token.user)
-            console.log('Access Token: %s', token.accessToken)
-            console.log('Expires: %s', new Date(token.expires))
+            //console.log('A new access token was generated')
+            //console.log('User: %s', token.user)
+            //console.log('Access Token: %s', token.accessToken)
+            //console.log('Expires: %s', new Date(token.expires))
         })
     })
 
     const mailer = message => {
         transporter.sendMail(message, (err, info) => {
             if (err) return console.log(err)
-            console.log('Email sent: ', info)
+            //console.log('Email sent: ', info)
         })
     }
 
     const message = {
-        to: req.body.email,
-        subject: 'Your confirmation code',        
+        to: mail,
+        subject: 'Your confirmation code',
         html: `
         <head>
             <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
@@ -161,7 +165,7 @@ app.post('/custom-email', async (req, res) => {
                                             line-height: 29.26px;
                                             text-align: center;
                                             color: #6c6c6c;" align="center" height="48" max-width="12">
-                                                ${req.body.email}
+                                                ${code.code}
                                             </td>
                                         </tr>
                                         <tr>
@@ -172,7 +176,7 @@ app.post('/custom-email', async (req, res) => {
                                             line-height: 29.26px;
                                             text-align: center;
                                             color: #6db2fa;" align="center" height="48" max-width="12">
-                                                Attention code valid only 3 minutes
+                                                Attention code valid only 2 minutes
                                             </td>
                                         </tr>
                                     </table>
@@ -186,93 +190,66 @@ app.post('/custom-email', async (req, res) => {
         </body>`,
     }
     mailer(message)
-    user = req.body
-    res.redirect('/custom-email')
-})
+}
 
-
-
-app.post('/author/add', upload.single('file'), (req, res) => {
-    addTitle(req.body)
-    res.send('Файл успешно загружен!');
-});
-app.get('/author/posts/blog', (req, res) => {
-    res.json(addData());
-});
-
-app.get('/author/posts/blog/download/img', (req, res) => {
-    const getRecipePhoto = (req) => {
-        try {
-            const filePath = path.join(__dirname + "/uploadsstatik", String(req.query.id) + ".png");
-            res.sendFile(filePath);
-        } catch (e) {
-            console.log(e)
+function addTokenToBasa(gmail, tok) {
+    try {
+        const data = JSON.parse(fs.readFileSync('./basa/basejsonUser.json', 'utf8'))
+        let copy = Object.assign([], data);
+        for (let i = 0; i < data.users.length; i++) {
+            if (data.users[i].mail === gmail) {
+                if (data.users[i].token[0] === '') {
+                    copy.users[i].token.splice(0, 1, tok)
+                    fs.writeFileSync('./basa/basejsonUser.json', JSON.stringify(data));
+                    return { status: 200, id: data.users[i].id };
+                }
+                const generCode = Math.floor((Math.random() * (101 - 11) + 11) * 20000)
+                copy.users[i].code.splice(0, 1, generCode)
+                fs.writeFileSync('./basa/basejsonUser.json', JSON.stringify(data));
+                timeOut(gmail)
+                return { code: generCode }
+            }
         }
+        return { status: 500 };
+    } catch (err) {
+        console.log('Ошибка записи токена или записи кода', err);
+        return err
     }
-    getRecipePhoto(req)
-});
+}
 
-const PORT = process.env.PORT || 8080;
-const HOST = 'localhost';
+function timeOut(gmail) {
+    setTimeout(() => {
+        try {
+            const data = JSON.parse(fs.readFileSync('./basa/basejsonUser.json', 'utf8'))
+            let copy = Object.assign([], data);
+            for (let i = 0; i < data.users.length; i++) {
+                if (data.users[i].mail === gmail) {
+                    copy.users[i].code.splice(0, 1, '')
+                    fs.writeFileSync('./basa/basejsonUser.json', JSON.stringify(data));
+                    return 'Timeout'
+                }
+            }
+            return { status: 500 };
+        } catch (err) {
+            console.log('Ошибка перезаписи кода', err);
+            return err
+        }
+    }, "120000");
+}
 
-app.get('/', (req, res) => {
-    res.json(addData())
-});
-
-app.post('/auth', (req, res) => {
-    const tocen = jwt.sign({
-        gmail: req.body
-    }, 'secret123');
-
-    res.json({
-        status:authUser(req.body.gmail),
-        auth:true,
-        tocen
-    })
-});
-
-app.get('/tegs', (req, res) => {
-    res.json(getTegs());
-});
-
-app.get('/years', (req, res) => {
-    res.json(getYear())
-});
-
-app.get('/genres', (req, res) => {
-    res.json(getGenre())
-});
-
-app.post('/add', (req, res) => {
-    addTitle(req.body)
-    res.json(addData())
-});
-
-app.get('/post', function (req, res) {
-    let id = req.query.id;
-    res.json(getOnePost(id))
-});
-
-app.get('/teg', function (req, res) {
-    let teg = req.query.teg;
-    console.log(teg)
-    res.json(getByTeg(teg))
-});
-
-app.get('/year', function (req, res) {
-    let teg = req.query.teg;
-    res.json(getByYearThis(teg))
-});
-
-app.get('/genre', function (req, res) {
-    let teg = req.query.teg;
-    res.json(getByGenreThis(teg))
-});
-
-app.post('/edit', (req, res) => {
-    editTitle(req.body)
-});
-
-app.listen(PORT, () => {
-    console.log(`Server run: http://${HOST}:${PORT}`)
-});
+function authTrue(gmail, code) {
+    try {
+        const data = JSON.parse(fs.readFileSync('./basa/basejsonUser.json', 'utf8'))
+        for (let i = 0; i < data.users.length; i++) {
+            if (data.users[i].mail === gmail) {
+                if (Number(data.users[i].code[0]) === Number(code)) {
+                    return { status: 200, token: data.users[i].token[0] };
+                }
+            }
+        }
+        return { status: 500 };
+    } catch (err) {
+        console.log('Ошибка записи токена или записи кода', err);
+        return err
+    }
+}
