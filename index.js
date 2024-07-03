@@ -54,6 +54,30 @@ app.post('/tocenemail', async (req, res) => {
     res.json({ token: authTrue(req.body.mailValue, req.body.data.code) });
 })
 
+app.post('/registr', (req, res) => {
+    console.log(req.body)
+   /* const tocen = jwt.sign({
+        gmail: req.body
+    }, 'secret123');
+    let auth = authUser(req.body.gmail)
+    if (auth.status === 200) {
+        addToken(req.body.gmail, addTokenToBasa(req.body.gmail, tocen))
+        res.json({
+            mail: req.body.gmail,
+            status: auth.status,
+            id: auth.id,
+            auth: true,
+            tocen
+        });
+    }
+    else {
+        res.json({
+            status: auth,
+            auth: true,
+        });
+    }*/
+});
+
 app.listen(PORT, () => {
     console.log(`Server run: http://${HOST}:${PORT}`)
 });
@@ -67,7 +91,7 @@ function addToken(mail, code) {
             auth: {
                 type: 'OAuth2',
                 user: 'marenichd1990@gmail.com',
-                refreshToken: '1//04030R0SGzApaCgYIARAAGAQSNwF-L9IrnVdJ8GiXub8DjWNgRpMs0u4UHzpWM0zW6s1Kuav_XJWaaixS9TghAoBwYw9MVI0Hpsg',
+                refreshToken: '1//04zl8FkNVH1icCgYIARAAGAQSNwF-L9IrZF8NKgnSpmmBNEmcPNGWY2lwHe4lD_1AgylLrO0XT3u3NatoVNvtu6NodJxTQCuvcpU',
                 clientId: '686679209962-amigag1o3prerlltaq7qk9ektm4cmms0.apps.googleusercontent.com',
                 clientSecret: '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',
             }
